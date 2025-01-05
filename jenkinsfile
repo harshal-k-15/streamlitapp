@@ -6,6 +6,11 @@ pipeline {
                 git url: 'https://github.com/harshal-k-15/streamlitapp.git', branch: 'main'
             }
         }
+        stage("Clean Up Containers") {
+            steps {
+                sh 'docker rm -f $(docker ps -aq) || true'
+            }
+        }
         stage("Build Docker Image") {
             steps {
                 sh 'docker build -t myimage .'
