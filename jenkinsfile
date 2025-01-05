@@ -1,23 +1,30 @@
 pipeline {
-    agent any
+    agent {
+        node {
+            label 'jenkins_slave_node1'
+        }
+    }
     stages {
         stage("Checkout Code") {
             steps {
                 git url: 'https://github.com/harshal-k-15/streamlitapp.git', branch: 'main'
             }
         }
-        stage("Clean Up Containers") {
+        stage("Clean Up Containers") {                       
             steps {
+                // Remove any existing Docker containers to ensure a clean build environment
                 sh 'docker rm -f $(docker ps -aq) || true'
             }
         }
         stage("Build Docker Image") {
             steps {
+                // Build a new Docker image using the Dockerfile in the repository
                 sh 'docker build -t myimage .'
             }
         }
         stage("Run Docker Container") {
             steps {
+                // Run the newly built Docker image as a container, exposing it on port 8501
                 sh 'docker run -d -p 8501:8501 myimage'
             }
         }
