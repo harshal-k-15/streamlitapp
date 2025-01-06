@@ -1,32 +1,62 @@
 pipeline {
     agent {
         node {
-            label 'jenkins_slave_node1'
+            label 'JenkinsSlaveNodeLabel'
         }
     }
+    
     stages {
-        stage("Checkout Code") {
+        stage('Checkout Code') {
             steps {
+                // Clone the repository from GitHub
                 git url: 'https://github.com/harshal-k-15/streamlitapp.git', branch: 'main'
             }
         }
-        stage("Clean Up Containers") {                       
+        
+        // Optional: Clean up any existing Docker environment (commented out for now)
+        /*
+        stage('Clean Up Docker Environment') {
             steps {
-                // Remove any existing Docker containers to ensure a clean build environment
+                // Remove the existing Docker image, ignoring errors if it doesn't exist
+                sh 'docker rmi -f myimage || true'
+                
+                // Remove all stopped containers, ignoring errors if no containers exist
                 sh 'docker rm -f $(docker ps -aq) || true'
             }
         }
-        stage("Build Docker Image") {
+        */
+        
+        stage('Build Docker Image') {
             steps {
-                // Build a new Docker image using the Dockerfile in the repository
+                // Build a Docker image with the tag "myimage"
                 sh 'docker build -t myimage .'
             }
         }
-        stage("Run Docker Container") {
+        
+        stage('Add Tag and Push Image') {
             steps {
-                // Run the newly built Docker image as a container, exposing it on port 8501
-                sh 'docker run -d -p 8501:8501 myimage'
+                // Authenticate to Docker Hub and push the Docker image
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    // Log in to Docker Hub
+                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                    
+                    // Tag the Docker image
+                    sh 'docker tag myimage $DOCKER_USERNAME/myimage'
+                    
+                    // Push the tagged image to Docker Hub
+                    sh 'docker push $DOCKER_USERNAME/myimage'
+                }
             }
         }
+        
+        // Optional: Deploy to Kubernetes cluster (commented out for now)
+        /*
+        stage('Deploy to Kubernetes') {
+            steps {
+                // Apply the Kubernetes deployment configuration
+                sh 'kubectl apply -f my-deployment.yml'
+            }
+        }
+        */
     }
 }
